@@ -48,18 +48,19 @@ unsafe fn buffer<T>(buffer_id: &mut u32, items: &Vec<T>, buffer_type: gl::types:
 unsafe fn bind_buffers(buffer_id: &mut u32, items: &Vec<f32>, colors: &Vec<f32>, normals :&Vec<f32>, buffer_type: gl::types::GLenum ) -> () { 
     let positions: u32 = 0; // location id for the buffer object positions.
     let colors_id: u32 = 1; // location id for the buffer object colors (rgba)
-    let normal_id: u32 = 15; // location id for the buffer normals
+    let normal_id: u32 = 2; // location id for the buffer normals
 
 
     buffer(buffer_id, items, buffer_type, positions, 3);
     buffer(buffer_id, colors, buffer_type, colors_id, 4);
+    buffer(buffer_id, normals, buffer_type, normal_id, 3);
     
 }
 
 unsafe fn vertex_array_object(voc_id: &mut u32, vertex: &Vec<f32>, indices: &Vec<u32>, colors: &Vec<f32>, normals : &Vec<f32>) -> u32 {
     let mut vao_id: u32 = *voc_id; // borrows the global id to get an individual id.
 
-    
+ 
     gl::GenVertexArrays(1,  &mut vao_id); // generating the VAO.
     gl::BindVertexArray(vao_id);
 
@@ -162,49 +163,17 @@ fn main() {
 
         let fov : f32 = std::f32::consts::PI/4.0;
 
-        let mut vertices_three_triangle: Vec<f32> = vec![
-            -0.2, 0.0, 0.0, 
-             0.2, 0.0, 0.0,  
-             0.0, 0.3, 0.0,
-
-             0.2, 0.0, 0.0, 
-             0.6, 0.0, 0.0,  
-             0.4, 0.3, 0.0,
-
-             -0.6, 0.0, 0.0, 
-             -0.2, 0.0, 0.0,  
-             -0.4, 0.3, 0.0,
-        ];
-
-        let mut indices_three_triangle = vec![
-            0,1,2,
-            3,4,5,
-            6,7,8
-        ];
-
-        let mut colors = vec![
-            1.0,0.0,1.0,1.0,
-            0.0,0.0,1.0,1.0,
-            0.0,1.0,0.0,1.0,
-
-            1.0,0.0,1.0,1.0,
-            0.0,0.0,1.0,1.0,
-            0.0,1.0,0.0,1.0,
-
-            1.0,0.0,1.0,1.0,
-            0.0,0.0,1.0,1.0,
-            0.0,1.0,0.0,1.0
-        ];
-
         
         /* generating the Terrain mesh */
         let terrain_mesh: mesh::Mesh = mesh::Terrain::load("./resources/lunarsurface.obj");
 
+        /*loading all messhes from helicopter*/
+        let helicopter: mesh::Helicopter = mesh::Helicopter::load("./resources/helicopter.obj");
 
         // == // Set up your VAO here
         unsafe {
 
-            // [report task 1] Added colors to the VAO. 
+            // loading in the helicopter to the VAO. 
             vertex_array_object(&mut vao, &terrain_mesh.vertices, &terrain_mesh.indices, &terrain_mesh.colors, &terrain_mesh.normals);
 
 
@@ -226,13 +195,11 @@ fn main() {
         let mut last_frame_time = first_frame_time;
         // The main rendering loops
 
-        let theta : f32 = 30.0;
-        let camera_speed : f32 = 3.0;
+        let theta : f32 = 10.0;
+        let camera_speed : f32 = 30.0;
 
         /* Create a camera struct to handle the camera movements. */
-        let mut camera_struct = unsafe{  camera::Camera::new((SCREEN_H as f32)/(SCREEN_W as f32), fov , 1.0, 100.0, -5.0) };
-
-
+        let mut camera_struct = unsafe{  camera::Camera::new((SCREEN_H as f32)/(SCREEN_W as f32), fov , 1.0, 1000.0, -5.0) };
         
      
         loop {
