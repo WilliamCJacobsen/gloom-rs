@@ -278,7 +278,7 @@ fn main() {
                         VirtualKeyCode::A => {
                             unsafe{ 
                                 camera_struct.left_right(new_camera_speed);
-                                animate::move_body(&mut helicopter_object, glm::vec3(-camera_speed, 0.0, 0.0), glm::vec3(3, 0, 0), delta_time);
+        
                              }
 
                         },
