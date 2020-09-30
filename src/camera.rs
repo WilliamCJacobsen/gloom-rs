@@ -34,7 +34,7 @@ impl Camera{
         Camera { 
             m_perspective: glm::perspective(aspect, fov, z_near, z_far), // create the perspective matrix for task 4 [report]
             m_rotation:  Box::new(glm::identity()), // initalizing the rotation mattrix with an identity matrix.
-            m_translation:  Box::new(translate(0.0, -9.0, offset)) // init the translation matrix with an offset. ( comon is -5.0 f32)
+            m_translation:  Box::new(translate(0.0, -17.0, offset)) // init the translation matrix with an offset. ( comon is -5.0 f32)
          }
     }
 

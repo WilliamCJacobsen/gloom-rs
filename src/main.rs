@@ -278,7 +278,7 @@ fn main() {
                         VirtualKeyCode::A => {
                             unsafe{ 
                                 camera_struct.left_right(new_camera_speed);
-        
+                                animate::move_body(&mut helicopter_object, glm::vec3(-camera_speed, 0.0, 0.0), delta_time);
                              }
 
                         },
@@ -291,12 +291,15 @@ fn main() {
                         },
                         VirtualKeyCode::Q => {
                             // When Q is pressed the camera goes up
-                            unsafe{ camera_struct.up_down(new_camera_speed) }
+                            unsafe{ 
+                                camera_struct.up_down(new_camera_speed);
+                             }
 
                         },
                         VirtualKeyCode::E=> {
                             // When E is pressed the camera goes down
-                            unsafe{ camera_struct.up_down(-new_camera_speed) }
+                            unsafe{ camera_struct.up_down(-new_camera_speed);
+                               }
 
                         },
                         VirtualKeyCode::Left => {
@@ -342,7 +345,7 @@ fn main() {
                 animate::animate(&mut zombie_heilcopter4, elapsed, delta_time, 1.0);
                 animate::animate(&mut zombie_heilcopter3, elapsed, delta_time, 2.0);
                 animate::animate(&mut zombie_heilcopter2, elapsed, delta_time, 3.0);
-                animate::animate(&mut zombie_heilcopter1, elapsed, delta_time, 4.5);
+                animate::animate(&mut zombie_heilcopter1, elapsed, delta_time, 4.4);
                 // Done animating the zombie helicopters...
 
                 animate::animate(&mut helicopter_object, elapsed, delta_time, 4.0);
