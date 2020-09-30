@@ -11,6 +11,7 @@ pub unsafe fn new_helicopter(vao : &mut u32, mesh: &mesh::Helicopter) -> std::me
     
     let mut place_holder_vao = VAO::vertex_array_object( vao, &mesh.body.vertices, &mesh.body.indices, &mesh.body.colors, &mesh.body.normals);
     let mut helicopter_object = scene_graph::SceneNode::from_vao(place_holder_vao, mesh.body.index_count,String::from("body") );
+    helicopter_object.position = glm::vec3(0.0, 9.0, 0.0);
 
     place_holder_vao = VAO::vertex_array_object( vao, &mesh.main_rotor.vertices, &mesh.main_rotor.indices, &mesh.main_rotor.colors, &mesh.main_rotor.normals);
     let mut main_rotor = scene_graph::SceneNode::from_vao(place_holder_vao, mesh.main_rotor.index_count, String::from("main"));

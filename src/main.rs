@@ -242,7 +242,7 @@ fn main() {
         let camera_speed : f32 = 30.0;
 
         /* Create a camera struct to handle the camera movements. */
-        let mut camera_struct = unsafe{  camera::Camera::new((SCREEN_H as f32)/(SCREEN_W as f32), fov , 1.0, 1000.0, -20.0) };
+        let mut camera_struct = unsafe{  camera::Camera::new((SCREEN_H as f32)/(SCREEN_W as f32), fov , 1.0, 1000.0, -28.0) };
         
      
         loop {
@@ -262,19 +262,31 @@ fn main() {
 
                     match key {
                         VirtualKeyCode::W => {
-                            unsafe{ camera_struct.forward_backward(new_camera_speed) }
+                            unsafe{ 
+                                camera_struct.forward_backward(new_camera_speed);
+                                animate::move_body(&mut helicopter_object, glm::vec3(0.0, 0.0, -camera_speed), delta_time);
+                             }
 
                         },
                         VirtualKeyCode::S => {
-                            unsafe{ camera_struct.forward_backward(-new_camera_speed) }
+                            unsafe{
+                                 camera_struct.forward_backward(-new_camera_speed);
+                                 animate::move_body(&mut helicopter_object, glm::vec3(0.0, 0.0, camera_speed), delta_time);
+                                 }
   
                         },
                         VirtualKeyCode::A => {
-                            unsafe{ camera_struct.left_right(-new_camera_speed) }
+                            unsafe{ 
+                                camera_struct.left_right(new_camera_speed);
+                                animate::move_body(&mut helicopter_object, glm::vec3(-camera_speed, 0.0, 0.0), glm::vec3(3, 0, 0), delta_time);
+                             }
 
                         },
                         VirtualKeyCode::D => {
-                            unsafe{ camera_struct.left_right(new_camera_speed) }
+                            unsafe{ 
+                                camera_struct.left_right(-new_camera_speed);
+                                animate::move_body(&mut helicopter_object, glm::vec3(camera_speed, 0.0, 0.0), delta_time);
+                             }
 
                         },
                         VirtualKeyCode::Q => {
@@ -332,7 +344,7 @@ fn main() {
                 animate::animate(&mut zombie_heilcopter2, elapsed, delta_time, 3.0);
                 animate::animate(&mut zombie_heilcopter1, elapsed, delta_time, 4.5);
                 // Done animating the zombie helicopters...
-                
+
                 animate::animate(&mut helicopter_object, elapsed, delta_time, 4.0);
                 update_node_transformations(&mut scene_graph_obj, &glm::identity());
                 draw_scene(&scene_graph_obj, &camera_struct.move_camera_matrix());

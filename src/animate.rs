@@ -24,6 +24,10 @@ unsafe fn zombie(body : &mut scene_graph::SceneNode, total_time: f32, offset: f3
     );
 }
 
+pub unsafe fn move_body(body : &mut scene_graph::SceneNode, translation : glm::Vec3, delta_time : f32){
+    body.position += delta_time * translation
+}
+
 pub unsafe fn animate(root :  &mut scene_graph::SceneNode, total_time : f32, delta_time:f32, offset: f32)
 {
     match root.name.as_str() {
