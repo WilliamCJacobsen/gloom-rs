@@ -8,6 +8,7 @@ layout(location = 2) in vec3 normal;
 
 layout(location = 3) uniform mat4 transformation_matrix;
 
+layout(location = 4) uniform mat4 model_matrix;
 
 out VS_OUTPUT{
     vec4 color;
@@ -18,7 +19,7 @@ out VS_OUTPUT{
 
 void main()
 {
-    gl_Position =  transformation_matrix * vec4(position, 1.0f);
+    gl_Position = transformation_matrix * vec4(position, 1.0f);
     OUT.color = color;
-    OUT.normal = normal;
+    OUT.normal = normalize(mat3(model_matrix) * normal);
 }

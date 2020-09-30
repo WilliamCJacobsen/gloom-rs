@@ -13,10 +13,12 @@ use std::pin::Pin;
 type Node = ManuallyDrop<Pin<Box<SceneNode>>>;
 
 pub struct SceneNode {
+
     pub position: glm::Vec3,
     pub rotation: glm::Vec3,
     pub scale: glm::Vec3,
     pub reference_point: glm::Vec3,
+    pub name: String,
 
     pub current_transformation_matrix: glm::Mat4,
 
@@ -37,9 +39,10 @@ impl SceneNode {
             vao_id: 0,
             index_count: -1,
             children: vec![],
+            name: String::from("NONE")
         })))
     }
-    pub fn from_vao(vao_id: u32, index_count: i32) -> Node {
+    pub fn from_vao(vao_id: u32, index_count: i32, name: String) -> Node {
         ManuallyDrop::new(Pin::new(Box::new(SceneNode {
             position: glm::zero(),
             rotation: glm::zero(),
@@ -48,6 +51,7 @@ impl SceneNode {
             current_transformation_matrix: glm::identity(),
             vao_id, index_count,
             children: vec![],
+            name : name
         })))
     }
     pub fn add_child(&mut self, child: &SceneNode) {

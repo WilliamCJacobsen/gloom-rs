@@ -20,7 +20,7 @@ use std::{
 //-------------- Struct --------------
 //init a public struct called camera.
 pub struct Camera {
-    m_perspective: glm::Mat4,
+    pub m_perspective: glm::Mat4,
     m_rotation :  Box<glm::Mat4>, // the variabels which holds the rotation matrix
     m_translation :  Box<glm::Mat4> // the variable which holds the translation matrix.
 }

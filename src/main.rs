@@ -15,65 +15,14 @@ const SCREEN_W: u32 = 600;
 const SCREEN_H: u32 = 500;
 
 // --- last assignment import ---
-mod mesh;
+pub mod mesh;
+pub mod scene_graph;
+pub mod object;
+pub mod VAO;
+pub mod toolbox;
+pub mod animate;
 // -------------------------------
 
-unsafe fn buffer<T>(buffer_id: &mut u32, items: &Vec<T>, buffer_type: gl::types::GLenum, location_id: u32, n_values: i32) -> () {
-    gl::GenBuffers(1, buffer_id);
-    gl::BindBuffer(buffer_type, *buffer_id);
-
-    gl::BufferData(
-        buffer_type,
-        (items.len() * std::mem::size_of::<T>()) as isize, 
-        pointer_to_array(items),
-        gl::STATIC_DRAW
-    );
-
-    if buffer_type == gl::ARRAY_BUFFER {
-        gl::VertexAttribPointer(
-            location_id,
-            n_values,
-            gl::FLOAT,
-            gl::FALSE,
-            (std::mem::size_of::<T>() as i32) * n_values, /* The size is mem * x to the next x*/
-            ptr::null()
-        );
-        gl::EnableVertexAttribArray(location_id);
-    }
-
-
-}
-
-// helper function to bind vectors to bind vectors to VAO objects. 
-unsafe fn bind_buffers(buffer_id: &mut u32, items: &Vec<f32>, colors: &Vec<f32>, normals :&Vec<f32>, buffer_type: gl::types::GLenum ) -> () { 
-    let positions: u32 = 0; // location id for the buffer object positions.
-    let colors_id: u32 = 1; // location id for the buffer object colors (rgba)
-    let normal_id: u32 = 2; // location id for the buffer normals
-
-
-    buffer(buffer_id, items, buffer_type, positions, 3);
-    buffer(buffer_id, colors, buffer_type, colors_id, 4);
-    buffer(buffer_id, normals, buffer_type, normal_id, 3);
-    
-}
-
-unsafe fn vertex_array_object(voc_id: &mut u32, vertex: &Vec<f32>, indices: &Vec<u32>, colors: &Vec<f32>, normals : &Vec<f32>) -> u32 {
-    let mut vao_id: u32 = *voc_id; // borrows the global id to get an individual id.
-
- 
-    gl::GenVertexArrays(1,  &mut vao_id); // generating the VAO.
-    gl::BindVertexArray(vao_id);
-
-    *voc_id = *voc_id + 1; /* adding 1 to the value voc_id */
-
-    let mut buffer_id = 0;
-
-    bind_buffers(&mut buffer_id, vertex, colors, normals , gl::ARRAY_BUFFER); //binding vertexes and colors to Vertex buffer objects. 
-    buffer(&mut buffer_id, indices, gl::ELEMENT_ARRAY_BUFFER, 0, 0);
-
-
-    vao_id
-}
 // == // Helper functions to make interacting with OpenGL a little bit prettier. You *WILL* need these! // == //
 // The names should be pretty self explanatory
 fn byte_size_of_array<T>(val: &[T]) -> isize {
@@ -95,13 +44,75 @@ fn offset<T>(n: u32) -> *const c_void {
     (n * mem::size_of::<T>() as u32) as *const T as *const c_void
 }
 
-// Get a null pointer (equivalent to an offset of 0)
-// ptr::null()
+
 
 /*Key pressed helper function*/
 
-// == // Modify and complete the function below for the first task
-// unsafe fn FUNCTION_NAME(ARGUMENT_NAME: &Vec<f32>, ARGUMENT_NAME: &Vec<u32>) -> u32 { } 
+unsafe fn draw_scene(root: &scene_graph::SceneNode, view_projection_matrix: &glm::Mat4) {
+    // Check if node is drawable, set uniforms, draw.
+    
+    if root.index_count > -1 {
+        // checking if the indexcount is greater than -1, if it is then it contains items that will be drawn. 
+        
+        gl::BindVertexArray(root.vao_id);
+        gl::UniformMatrix4fv(3, 1 as GLsizei, gl::FALSE, (view_projection_matrix * root.current_transformation_matrix).as_ptr()); // sending in the MVP - matrix
+        gl::UniformMatrix4fv(4, 1 as GLsizei, gl::FALSE, (root.current_transformation_matrix).as_ptr()); // sending in the model matrix
+        gl::DrawElements(
+            gl::TRIANGLES, 
+            3 * root.index_count,
+            gl::UNSIGNED_INT, 
+            ptr::null()
+        ); 
+    }
+
+    // checking if the root has no more children. 
+    if root.children.len() == 0 {
+        return;
+    }
+
+    // Recurse
+    for &child in &root.children {
+        draw_scene(&*child, view_projection_matrix);
+    }
+}
+
+unsafe fn update_node_transformations(root: &mut scene_graph::SceneNode, transformation_so_far: &glm::Mat4) {
+    // Construct the correct transformation matrix
+
+    // Update the node's transformation matrix
+    // nodes location? what should i do with this information...
+    //  *glm::rotation(0.2, &root.rotation) *  );
+    let mut rotate_item: glm::Mat4 = glm::identity();
+
+    if root.rotation.x != 0.0 {
+        rotate_item *= glm::rotation(root.rotation.x, &glm::vec3(1.0, 0.0 , 0.0)) 
+    }
+
+    if root.rotation.y != 0.0 {
+        rotate_item *= glm::rotation(root.rotation.y, &glm::vec3(0.0, 1.0 , 0.0)) 
+    }
+
+    if root.rotation.z != 0.0 {
+        rotate_item *= glm::rotation(root.rotation.z, &glm::vec3(0.0, 0.0 , 1.0)) 
+    }
+
+
+    rotate_item = glm::translation(&root.reference_point) * rotate_item * glm::translation(&glm::vec3(-root.reference_point.x, -root.reference_point.y, -root.reference_point.z));
+    
+    
+    root.current_transformation_matrix =  transformation_so_far * glm::translation(&root.position) * rotate_item ;
+
+    
+    // checking if the root has no more children. 
+    if root.children.len() == 0 {
+        return;
+    }
+
+    for &child in &root.children {// Recurse
+        update_node_transformations(&mut *child,
+        &root.current_transformation_matrix);
+    }
+}
 
 fn main() {
     // Set up the necessary objects to deal with windows and event handling
@@ -158,6 +169,8 @@ fn main() {
         // == // Set up your VAO here
         let mut vao: gl::types::GLuint = 0;
 
+        let mut place_holder_vao: gl::types::GLuint;
+
 
         let mut matrix_integer: GLint;
 
@@ -169,12 +182,42 @@ fn main() {
 
         /*loading all messhes from helicopter*/
         let helicopter: mesh::Helicopter = mesh::Helicopter::load("./resources/helicopter.obj");
-
+        let mut scene_graph_obj = scene_graph::SceneNode::new();
         // == // Set up your VAO here
+        
+        let mut zombie_heilcopter1 :std::mem::ManuallyDrop<std::pin::Pin<std::boxed::Box<scene_graph::SceneNode>>>;
+        let mut zombie_heilcopter2 : std::mem::ManuallyDrop<std::pin::Pin<std::boxed::Box<scene_graph::SceneNode>>>;
+        let mut zombie_heilcopter3 : std::mem::ManuallyDrop<std::pin::Pin<std::boxed::Box<scene_graph::SceneNode>>>;
+        let mut zombie_heilcopter4 : std::mem::ManuallyDrop<std::pin::Pin<std::boxed::Box<scene_graph::SceneNode>>> ;
+        let mut zombie_heilcopter5 : std::mem::ManuallyDrop<std::pin::Pin<std::boxed::Box<scene_graph::SceneNode>>>;
+        let mut helicopter_object : std::mem::ManuallyDrop<std::pin::Pin<std::boxed::Box<scene_graph::SceneNode>>>;
         unsafe {
+            // 
 
-            // loading in the helicopter to the VAO. 
-            vertex_array_object(&mut vao, &terrain_mesh.vertices, &terrain_mesh.indices, &terrain_mesh.colors, &terrain_mesh.normals);
+            let mut terrain_obj = object::new_terrain(&mut vao, &terrain_mesh);
+
+            helicopter_object = object::new_helicopter(&mut vao, &helicopter);
+
+             zombie_heilcopter1 = object::zombie_helicopter(&mut vao, &helicopter);
+             zombie_heilcopter2 = object::zombie_helicopter(&mut vao, &helicopter);
+             zombie_heilcopter3 = object::zombie_helicopter(&mut vao, &helicopter);
+             zombie_heilcopter4 = object::zombie_helicopter(&mut vao, &helicopter);
+             zombie_heilcopter5 = object::zombie_helicopter(&mut vao, &helicopter);
+            // Adding helicopter graph tree to scene_graph_obj and the one terrain_mesh object node.
+
+            terrain_obj.add_child(&helicopter_object);
+            terrain_obj.add_child(&zombie_heilcopter1);
+            terrain_obj.add_child(&zombie_heilcopter2);
+            terrain_obj.add_child(&zombie_heilcopter3);
+            terrain_obj.add_child(&zombie_heilcopter4);
+            terrain_obj.add_child(&zombie_heilcopter5);
+            
+            scene_graph_obj.add_child(&terrain_obj);
+            
+            
+            scene_graph_obj.print();
+
+
 
 
             // Basic usage of shader helper
@@ -199,7 +242,7 @@ fn main() {
         let camera_speed : f32 = 30.0;
 
         /* Create a camera struct to handle the camera movements. */
-        let mut camera_struct = unsafe{  camera::Camera::new((SCREEN_H as f32)/(SCREEN_W as f32), fov , 1.0, 1000.0, -5.0) };
+        let mut camera_struct = unsafe{  camera::Camera::new((SCREEN_H as f32)/(SCREEN_W as f32), fov , 1.0, 1000.0, -20.0) };
         
      
         loop {
@@ -282,19 +325,18 @@ fn main() {
                 gl::ClearColor(0.163, 0.163, 0.163, 1.0);
                 gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
-                // Issue the necessary commands to draw your scene here
-
-                gl::DrawElements(
-                    gl::TRIANGLES, 
-                    3 * terrain_mesh.index_count, 
-                    gl::UNSIGNED_INT, 
-                    ptr::null()
-                ); 
+                // Animating the zombie helicopters here
+                animate::animate(&mut zombie_heilcopter5, elapsed, delta_time, 0.0);
+                animate::animate(&mut zombie_heilcopter4, elapsed, delta_time, 1.0);
+                animate::animate(&mut zombie_heilcopter3, elapsed, delta_time, 2.0);
+                animate::animate(&mut zombie_heilcopter2, elapsed, delta_time, 3.0);
+                animate::animate(&mut zombie_heilcopter1, elapsed, delta_time, 4.5);
+                // Done animating the zombie helicopters...
                 
+                animate::animate(&mut helicopter_object, elapsed, delta_time, 4.0);
+                update_node_transformations(&mut scene_graph_obj, &glm::identity());
+                draw_scene(&scene_graph_obj, &camera_struct.move_camera_matrix());
 
-        
-                // takes in the matrix Identity for the vertex shader and sends in the product from camera struct.
-                gl::UniformMatrix4fv(matrix_integer, 1 as GLsizei, gl::FALSE, camera_struct.move_camera_matrix().as_ptr()); // [report task 3]
             
                 
             }
